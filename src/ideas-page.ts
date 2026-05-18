@@ -11,6 +11,7 @@ import { toLines } from "./utils/to-lines";
 const generateButton = document.querySelector(`[data-action="generate"]`) as HTMLButtonElement;
 const ideaList = document.querySelector("#idea-list") as HTMLElement;
 const ideaTitle = document.querySelector("#idea-title") as HTMLElement;
+const parametersForm = document.querySelector("#parameters") as HTMLFormElement;
 
 const ideas$ = new BehaviorSubject<IdeaItem[]>([]);
 const constraints$ = new BehaviorSubject<Constraint[]>([]);
@@ -57,13 +58,8 @@ Respond in JSONL format, exactly one item per line. Each item must be valid JSON
         filter((item) => item !== null),
         tap((item) => ideas$.next([...ideas$.value, item])),
         toArray(),
-        switchMap((items) =>
-          suggestConstraints(items).pipe(
-            tap((constraint) => constraints$.next([...constraints$.value, constraint])),
-            toArray(),
-            switchMap(() => items)
-          )
-        )
+        switchMap((items) => suggestConstraints(items)),
+        tap((constraint) => constraints$.next([...constraints$.value, constraint]))
       )
     )
   )
@@ -79,6 +75,22 @@ const ideaListView$ = ideas$.pipe(
           <h3>${idea.title}</h3>
           <p>${idea.description}</p>
         </li> `
+      )}`
+  )
+);
+
+const constraintsView$ = constraints$.pipe(
+  map(
+    (constraints) =>
+      html` ${repeat(
+        constraints,
+        (constraint) => constraint.id,
+        (constraint) => html`<div class="constraint">
+          <label>${constraint.name}</label>
+          <select name="${constraint.name}">
+            ${constraint.options.map((option) => html`<option value="${option}">${option}</option>`)}
+          </select>
+        </div> `
       )}`
   )
 );
@@ -163,3 +175,4 @@ Rules:
 }
 
 render(html` ${observe(ideaListView$)} `, ideaList);
+render(html` ${observe(constraintsView$)} `, parametersForm);
