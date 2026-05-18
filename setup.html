@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>idea-garden</title>
+  </head>
+  <body>
+    <menu>
+      <a href="./index.html">Home</a>
+    </menu>
+    <h1>Setup</h1>
+    <form id="setup">
+      <label for="openai-api-key">OpenAI API Key</label>
+      <br />
+      <input
+        type="password"
+        id="openai-api-key"
+        name="apiKey"
+        required
+        autocomplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+      />
+    </form>
+    <script type="module" src="/src/setup-page.ts"></script>
+  </body>
+</html>
