@@ -5,6 +5,7 @@ import "./style.css";
 
 const generateButton = document.querySelector(`[data-action="generate"]`) as HTMLButtonElement;
 const ideaList = document.querySelector("#idea-list") as HTMLElement;
+const ideaTitle = document.querySelector("#idea-title") as HTMLElement;
 
 fromEvent(generateButton, "click")
   .pipe(
@@ -17,7 +18,17 @@ fromEvent(generateButton, "click")
       const stream = await openai.responses.create({
         stream: true,
         model: "gpt-5.4-mini",
-        input: [{ role: "user", content: "Say hello in a long poem" }],
+        input: [
+          {
+            role: "system",
+            content: `
+Generate list of ideas based on the provided title. 
+Respond in JSONL format, exactly one item per line. Each item must be valid JSON object in this type:
+{ "title": string, "description": string }
+            `,
+          },
+          { role: "user", content: ideaTitle.textContent ?? "Random ideas" },
+        ],
         text: { verbosity: "low" },
         reasoning: { effort: "none" },
       });
