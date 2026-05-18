@@ -3,3 +3,10 @@ export interface IdeaItem {
   title: string;
   description: string;
 }
+
+export interface Constraint {
+  id: number;
+  name: string;
+  value: string;
+  options: string[];
+}
