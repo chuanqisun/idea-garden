@@ -1,9 +1,12 @@
+import { html, render } from "lit-html";
+import { repeat } from "lit-html/directives/repeat.js";
 import OpenAI from "openai";
 import { BehaviorSubject, filter, from, fromEvent, map, switchMap, tap } from "rxjs";
-import { toLines } from "./library/to-lines";
 import { openaiApiKey$ } from "./openai/openai-connection";
 import "./style.css";
 import type { IdeaItem } from "./types";
+import { observe } from "./utils/observe-directive";
+import { toLines } from "./utils/to-lines";
 
 const generateButton = document.querySelector(`[data-action="generate"]`) as HTMLButtonElement;
 const ideaList = document.querySelector("#idea-list") as HTMLElement;
@@ -53,6 +56,20 @@ Respond in JSONL format, exactly one item per line. Each item must be valid JSON
   )
   .subscribe();
 
+const ideaListView$ = ideas$.pipe(
+  map(
+    (ideas) =>
+      html` ${repeat(
+        ideas,
+        (idea) => idea.id,
+        (idea) => html`<li>
+          <h3>${idea.title}</h3>
+          <p>${idea.description}</p>
+        </li> `
+      )}`
+  )
+);
+
 function toIdeaItem(): (rawCode: string) => IdeaItem | null {
   let id = 0;
 
@@ -70,3 +87,5 @@ function toIdeaItem(): (rawCode: string) => IdeaItem | null {
     }
   };
 }
+
+render(html` ${observe(ideaListView$)} `, ideaList);
