@@ -1,5 +1,6 @@
 import OpenAI from "openai";
-import { filter, from, fromEvent, switchMap, tap } from "rxjs";
+import { filter, from, fromEvent, map, switchMap, tap } from "rxjs";
+import { toLines } from "./library/to-lines";
 import { openaiApiKey$ } from "./openai/openai-connection";
 import "./style.css";
 
@@ -35,10 +36,16 @@ Respond in JSONL format, exactly one item per line. Each item must be valid JSON
 
       return stream;
     }),
-    switchMap((stream) => from(stream)),
-    filter((chunk) => chunk.type === "response.output_text.delta"),
+    map((stream) =>
+      from(stream).pipe(
+        filter((chunk) => chunk.type === "response.output_text.delta"),
+        map((chunk) => chunk.delta)
+      )
+    ),
+    switchMap(toLines),
+    filter((line) => line.trim().length > 0),
     tap((ideaChunk) => {
-      ideaList.textContent += `${ideaChunk.delta}`;
+      ideaList.textContent += ideaChunk;
     })
   )
   .subscribe();
