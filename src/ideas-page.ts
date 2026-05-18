@@ -1,12 +1,15 @@
 import OpenAI from "openai";
-import { filter, from, fromEvent, map, switchMap, tap } from "rxjs";
+import { BehaviorSubject, filter, from, fromEvent, map, switchMap, tap } from "rxjs";
 import { toLines } from "./library/to-lines";
 import { openaiApiKey$ } from "./openai/openai-connection";
 import "./style.css";
+import type { IdeaItem } from "./types";
 
 const generateButton = document.querySelector(`[data-action="generate"]`) as HTMLButtonElement;
 const ideaList = document.querySelector("#idea-list") as HTMLElement;
 const ideaTitle = document.querySelector("#idea-title") as HTMLElement;
+
+const ideas$ = new BehaviorSubject<IdeaItem[]>([]);
 
 fromEvent(generateButton, "click")
   .pipe(
@@ -42,10 +45,28 @@ Respond in JSONL format, exactly one item per line. Each item must be valid JSON
         map((chunk) => chunk.delta)
       )
     ),
-    switchMap(toLines),
+    switchMap(toLines()),
     filter((line) => line.trim().length > 0),
-    tap((ideaChunk) => {
-      ideaList.textContent += ideaChunk;
-    })
+    map(toIdeaItem()),
+    filter((item) => item !== null),
+    tap((item) => ideas$.next([...ideas$.value, item]))
   )
   .subscribe();
+
+function toIdeaItem(): (rawCode: string) => IdeaItem | null {
+  let id = 0;
+
+  return (rawCode: string) => {
+    try {
+      const parsed = JSON.parse(rawCode);
+      return {
+        id: id++,
+        title: parsed.title,
+        description: parsed.description,
+      };
+    } catch (e) {
+      console.error("Failed to parse idea item", e);
+      return null;
+    }
+  };
+}
