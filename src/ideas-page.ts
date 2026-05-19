@@ -1,9 +1,12 @@
 import { html, render } from "lit-html";
 import { repeat } from "lit-html/directives/repeat.js";
 import { fromEvent, map, switchMap, tap, toArray } from "rxjs";
-import { constraints$, ideas$, type Constraint, type ConstraintOption, type IdeaItem } from "./store";
+import { constraints$, ideas$ } from "./store";
 import "./style.css";
 import { generateIdeas } from "./tasks/generate-ideas";
+import { cleanupChecks } from "./tasks/handle-clean-up-checks";
+import { handleConstraintCheck, handleConstraintOptionToggle } from "./tasks/handle-constraint-check";
+import { handleIdeaItemCheck } from "./tasks/handle-idea-item-check";
 import { suggestConstraints } from "./tasks/suggest-constraints";
 import { observe } from "./utils/observe-directive";
 
@@ -15,10 +18,7 @@ const parametersForm = document.querySelector("#parameters") as HTMLFormElement;
 
 fromEvent(generateButton, "click")
   .pipe(
-    tap(() => {
-      ideas$.next(ideas$.value.filter((idea) => idea.favorited));
-      constraints$.next(constraints$.value.filter((constraint) => constraint.favorited));
-    }),
+    tap(cleanupChecks),
     map(() => ideaTitle.textContent ?? "Random ideas"),
     switchMap(generateIdeas(ideas$, constraints$)),
     switchMap((item$) =>
@@ -31,14 +31,7 @@ fromEvent(generateButton, "click")
   )
   .subscribe();
 
-fromEvent(cleanButton, "click")
-  .pipe(
-    tap(() => {
-      ideas$.next(ideas$.value.filter((idea) => idea.favorited));
-      constraints$.next(constraints$.value.filter((constraint) => constraint.favorited));
-    })
-  )
-  .subscribe();
+fromEvent(cleanButton, "click").pipe(tap(cleanupChecks)).subscribe();
 
 const ideaListView$ = ideas$.pipe(
   map(
@@ -51,7 +44,7 @@ const ideaListView$ = ideas$.pipe(
             <label>
               <input
                 type="checkbox"
-                ?checked=${idea.favorited}
+                .checked=${Boolean(idea.favorited)}
                 @change=${(event: Event) => handleIdeaItemCheck(idea, event)}
               />
               ${idea.title}
@@ -73,7 +66,7 @@ const constraintsView$ = constraints$.pipe(
           <label
             ><input
               type="checkbox"
-              ?checked=${constraint.favorited}
+              .checked=${Boolean(constraint.favorited)}
               @change=${(event: Event) => handleConstraintCheck(constraint, event)}
             />
             ${constraint.name}</label
@@ -98,43 +91,3 @@ const constraintsView$ = constraints$.pipe(
 
 render(html` ${observe(ideaListView$)} `, ideaList);
 render(html` ${observe(constraintsView$)} `, parametersForm);
-
-function handleIdeaItemCheck(idea: IdeaItem, event: Event) {
-  const checked = (event.target as HTMLInputElement).checked;
-  ideas$.next(ideas$.value.map((i) => (i.id === idea.id ? { ...i, favorited: checked } : i)));
-}
-
-function handleConstraintCheck(constraint: Constraint, event: Event) {
-  const checked = (event.target as HTMLInputElement).checked;
-  constraints$.next(
-    constraints$.value.map((currentConstraint) =>
-      currentConstraint.id === constraint.id
-        ? {
-            ...currentConstraint,
-            favorited: checked,
-            options: currentConstraint.options.map((option) => ({
-              ...option,
-              selected: checked ? option.selected : false,
-            })),
-          }
-        : currentConstraint
-    )
-  );
-}
-
-function handleConstraintOptionToggle(constraint: Constraint, option: ConstraintOption) {
-  constraints$.next(
-    constraints$.value.map((currentConstraint) =>
-      currentConstraint.id === constraint.id
-        ? {
-            ...currentConstraint,
-            options: currentConstraint.options.map((currentOption) =>
-              currentOption.value === option.value
-                ? { ...currentOption, selected: !currentOption.selected }
-                : currentOption
-            ),
-          }
-        : currentConstraint
-    )
-  );
-}
