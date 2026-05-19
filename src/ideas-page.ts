@@ -1,7 +1,8 @@
 import { html, render } from "lit-html";
+import { live } from "lit-html/directives/live.js";
 import { repeat } from "lit-html/directives/repeat.js";
 import { fromEvent, map, switchMap, tap, toArray } from "rxjs";
-import { constraints$, ideas$ } from "./store";
+import { constraints$, ideas$, type Constraint, type ConstraintOption, type IdeaItem } from "./store";
 import "./style.css";
 import { generateIdeas } from "./tasks/generate-ideas";
 import { cleanupChecks } from "./tasks/handle-clean-up-checks";
@@ -15,6 +16,10 @@ const cleanButton = document.querySelector(`[data-action="clean"]`) as HTMLButto
 const ideaList = document.querySelector("#idea-list") as HTMLElement;
 const ideaTitle = document.querySelector("#idea-title") as HTMLElement;
 const parametersForm = document.querySelector("#parameters") as HTMLFormElement;
+const addConstraintButton = document.querySelector("#add-constraint") as HTMLButtonElement;
+const addIdeaButton = document.querySelector("#add-idea") as HTMLButtonElement;
+
+// ── Generate / Clean ────────────────────────────────────────────────────────
 
 fromEvent(generateButton, "click")
   .pipe(
@@ -33,25 +38,101 @@ fromEvent(generateButton, "click")
 
 fromEvent(cleanButton, "click").pipe(tap(cleanupChecks)).subscribe();
 
+// ── Constraint operations ───────────────────────────────────────────────────
+
+function addConstraint() {
+  const id = Date.now();
+  constraints$.next([...constraints$.value, { id, name: "New Constraint", options: [], favorited: false }]);
+}
+
+function updateConstraintName(constraint: Constraint, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  constraints$.next(constraints$.value.map((c) => (c.id === constraint.id ? { ...c, name: trimmed } : c)));
+}
+
+function deleteConstraint(constraint: Constraint) {
+  constraints$.next(constraints$.value.filter((c) => c.id !== constraint.id));
+}
+
+function addConstraintOption(constraint: Constraint, value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return;
+  if (constraint.options.some((o) => o.value === trimmed)) return;
+  constraints$.next(
+    constraints$.value.map((c) =>
+      c.id === constraint.id ? { ...c, options: [...c.options, { value: trimmed, selected: false }] } : c
+    )
+  );
+}
+
+function deleteConstraintOption(constraint: Constraint, option: ConstraintOption) {
+  constraints$.next(
+    constraints$.value.map((c) =>
+      c.id === constraint.id ? { ...c, options: c.options.filter((o) => o.value !== option.value) } : c
+    )
+  );
+}
+
+// ── Idea operations ─────────────────────────────────────────────────────────
+
+function addIdeaItem() {
+  const id = Date.now();
+  ideas$.next([...ideas$.value, { id, title: "New idea", description: "", favorited: false }]);
+}
+
+function updateIdeaTitle(idea: IdeaItem, title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  ideas$.next(ideas$.value.map((i) => (i.id === idea.id ? { ...i, title: trimmed } : i)));
+}
+
+function updateIdeaDescription(idea: IdeaItem, description: string) {
+  ideas$.next(ideas$.value.map((i) => (i.id === idea.id ? { ...i, description } : i)));
+}
+
+function deleteIdeaItem(idea: IdeaItem) {
+  ideas$.next(ideas$.value.filter((i) => i.id !== idea.id));
+}
+
+// ── Add buttons ─────────────────────────────────────────────────────────────
+
+fromEvent(addConstraintButton, "click").subscribe(addConstraint);
+fromEvent(addIdeaButton, "click").subscribe(addIdeaItem);
+
+// ── Views ────────────────────────────────────────────────────────────────────
+
 const ideaListView$ = ideas$.pipe(
   map(
     (ideas) =>
-      html` ${repeat(
+      html`${repeat(
         ideas,
         (idea) => idea.id,
-        (idea) => html`<li>
-          <h3>
-            <label>
-              <input
-                type="checkbox"
-                .checked=${Boolean(idea.favorited)}
-                @change=${(event: Event) => handleIdeaItemCheck(idea, event)}
-              />
-              ${idea.title}
-            </label>
-          </h3>
-          <p>${idea.description}</p>
-        </li> `
+        (idea) => html`<li class="idea-item ${idea.favorited ? "favorited" : ""}">
+          <div class="idea-header">
+            <input
+              type="checkbox"
+              .checked=${Boolean(idea.favorited)}
+              @change=${(event: Event) => handleIdeaItemCheck(idea, event)}
+            />
+            <input
+              type="text"
+              class="idea-title-input"
+              .value=${live(idea.title)}
+              @blur=${(e: FocusEvent) => updateIdeaTitle(idea, (e.target as HTMLInputElement).value)}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+            />
+            <button type="button" class="delete-btn" @click=${() => deleteIdeaItem(idea)}>×</button>
+          </div>
+          <textarea
+            class="idea-desc-textarea"
+            .value=${live(idea.description)}
+            placeholder="Add description…"
+            @blur=${(e: FocusEvent) => updateIdeaDescription(idea, (e.target as HTMLTextAreaElement).value)}
+          ></textarea>
+        </li>`
       )}`
   )
 );
@@ -59,35 +140,72 @@ const ideaListView$ = ideas$.pipe(
 const constraintsView$ = constraints$.pipe(
   map(
     (constraints) =>
-      html` ${repeat(
+      html`${repeat(
         constraints,
         (constraint) => constraint.id,
         (constraint) => html`<div class="constraint">
-          <label
-            ><input
-              type="checkbox"
-              .checked=${Boolean(constraint.favorited)}
-              @change=${(event: Event) => handleConstraintCheck(constraint, event)}
+          <div class="constraint-header">
+            <label>
+              <input
+                type="checkbox"
+                .checked=${Boolean(constraint.favorited)}
+                @change=${(event: Event) => handleConstraintCheck(constraint, event)}
+              />
+            </label>
+            <input
+              type="text"
+              class="constraint-name-input"
+              .value=${live(constraint.name)}
+              @blur=${(e: FocusEvent) =>
+                updateConstraintName(constraint, (e.target as HTMLInputElement).value)}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
             />
-            ${constraint.name}</label
-          >
+            <button
+              type="button"
+              class="delete-btn"
+              @click=${() => deleteConstraint(constraint)}
+            >×</button>
+          </div>
           <div class="constraint-options">
             ${repeat(
               constraint.options,
               (option) => option.value,
-              (option) => html`<button
-                type="button"
-                aria-pressed=${option.selected ? "true" : "false"}
-                @click=${() => handleConstraintOptionToggle(constraint, option)}
-              >
-                ${option.value}
-              </button>`
+              (option) => html`<span class="option-chip">
+                <button
+                  type="button"
+                  class="option-toggle"
+                  aria-pressed=${option.selected ? "true" : "false"}
+                  @click=${() => handleConstraintOptionToggle(constraint, option)}
+                >
+                  ${option.value}
+                </button>
+                <button
+                  type="button"
+                  class="option-delete"
+                  @click=${() => deleteConstraintOption(constraint, option)}
+                >×</button>
+              </span>`
             )}
+            <input
+              type="text"
+              class="add-option-input"
+              placeholder="+ option"
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === "Enter") {
+                  const input = e.target as HTMLInputElement;
+                  addConstraintOption(constraint, input.value);
+                  input.value = "";
+                }
+              }}
+            />
           </div>
-        </div> `
+        </div>`
       )}`
   )
 );
 
-render(html` ${observe(ideaListView$)} `, ideaList);
-render(html` ${observe(constraintsView$)} `, parametersForm);
+render(html`${observe(ideaListView$)}`, ideaList);
+render(html`${observe(constraintsView$)}`, parametersForm);
+

@@ -7,16 +7,29 @@
     <title>idea-garden</title>
   </head>
   <body>
-    <menu>
-      <a href="./setup.html">Setup</a>
-    </menu>
-    <h1 id="idea-title" contenteditable="plaintext-only">Awesome Sunday Morning idea</h1>
-    <form id="parameters"></form>
-    <div id="idea-list"></div>
-    <menu>
-      <button data-action="generate">Generate</button>
-      <button data-action="clean">Clean</button>
-    </menu>
+    <header class="app-header">
+      <h1 id="idea-title" contenteditable="plaintext-only">Awesome Sunday Morning idea</h1>
+      <menu class="header-menu">
+        <button data-action="generate">Generate</button>
+        <button data-action="clean">Clean</button>
+        <a href="./setup.html" class="menu-link">Setup</a>
+      </menu>
+    </header>
+    <div class="app-body">
+      <aside class="constraints-sidebar">
+        <div class="sidebar-header">
+          <h2>Constraints</h2>
+          <button id="add-constraint" type="button">+ Add</button>
+        </div>
+        <form id="parameters"></form>
+      </aside>
+      <main class="ideas-main">
+        <div class="ideas-toolbar">
+          <button id="add-idea" type="button">+ Add Idea</button>
+        </div>
+        <ul id="idea-list"></ul>
+      </main>
+    </div>
     <script type="module" src="/src/ideas-page.ts"></script>
   </body>
 </html>
