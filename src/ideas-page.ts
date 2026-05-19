@@ -8,6 +8,7 @@ import { suggestConstraints } from "./tasks/suggest-constraints";
 import { observe } from "./utils/observe-directive";
 
 const generateButton = document.querySelector(`[data-action="generate"]`) as HTMLButtonElement;
+const cleanButton = document.querySelector(`[data-action="clean"]`) as HTMLButtonElement;
 const ideaList = document.querySelector("#idea-list") as HTMLElement;
 const ideaTitle = document.querySelector("#idea-title") as HTMLElement;
 const parametersForm = document.querySelector("#parameters") as HTMLFormElement;
@@ -27,6 +28,15 @@ fromEvent(generateButton, "click")
         tap((constraint) => constraints$.next([...constraints$.value, constraint]))
       )
     )
+  )
+  .subscribe();
+
+fromEvent(cleanButton, "click")
+  .pipe(
+    tap(() => {
+      ideas$.next(ideas$.value.filter((idea) => idea.favorited));
+      constraints$.next(constraints$.value.filter((constraint) => constraint.favorited));
+    })
   )
   .subscribe();
 
