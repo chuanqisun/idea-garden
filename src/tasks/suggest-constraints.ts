@@ -18,7 +18,11 @@ export function suggestConstraints(
   return (items: IdeaItem[]) => {
     const selectedConstraints = constraints$.value
       .filter((constraint) => constraint.favorited)
-      .map((constraint) => ({ name: constraint.name, options: constraint.options }));
+      .map((constraint) => ({
+        name: constraint.name,
+        options: constraint.options.map((option) => option.value),
+        selectedOptions: constraint.options.filter((option) => option.selected).map((option) => option.value),
+      }));
 
     return from(
       openai.responses.create({
@@ -53,7 +57,7 @@ ${items.map((idea) => `- ${idea.title}: ${idea.description}`).join("\n")}
                 },
                 {
                   role: "user" as const,
-                  content: "Continue, generate 3-5 more",
+                  content: "Continue, generate up to 3 other constraints",
                 },
               ]
             : []),
@@ -74,8 +78,7 @@ ${items.map((idea) => `- ${idea.title}: ${idea.description}`).join("\n")}
               return {
                 id: id++,
                 name: parsed.name,
-                value: parsed.options?.at(0),
-                options: parsed.options,
+                options: (parsed.options ?? []).map((option: string) => ({ value: option, selected: false })),
               } satisfies Constraint;
             } catch (error) {
               console.error("Failed to parse constraint", error);

@@ -7,11 +7,15 @@ export interface IdeaItem {
   favorited?: boolean;
 }
 
+export interface ConstraintOption {
+  value: string;
+  selected?: boolean;
+}
+
 export interface Constraint {
   id: number;
   name: string;
-  value: string;
-  options: string[];
+  options: ConstraintOption[];
   favorited?: boolean;
 }
 

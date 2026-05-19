@@ -9,6 +9,10 @@ body {
   font-family: system-ui;
 }
 
+button[aria-pressed="true"] {
+  font-weight: 600;
+}
+
 menu {
   margin: 0;
   padding: 0;

@@ -17,7 +17,13 @@ export function generateIdeas(
     const selectedIdeas = ideas$.value
       .filter((idea) => idea.favorited)
       .map((idea) => ({ title: idea.title, description: idea.description }));
-    const selectedConstraints = constraints$.value.filter((constraint) => constraint.favorited);
+    const selectedConstraints = constraints$.value
+      .filter((constraint) => constraint.favorited)
+      .map((constraint) => ({
+        name: constraint.name,
+        selectedOptions: constraint.options.filter((option) => option.selected).map((option) => option.value),
+      }))
+      .filter((constraint) => constraint.selectedOptions.length > 0);
 
     const stream = await openai.responses.create({
       stream: true,
@@ -30,7 +36,9 @@ export function generateIdeas(
             selectedConstraints.length
               ? `
 Follow these constraints:
-${selectedConstraints.map((c) => `- ${c.name} should be ${c.value}`).join("\n")}.`.trim()
+${selectedConstraints
+  .map((constraint) => `- ${constraint.name} should be one of: ${constraint.selectedOptions.join(", ")}`)
+  .join("\n")}.`.trim()
               : null,
             `
 Respond in JSONL format, exactly one item per line. Each item must be valid JSON object in this type:

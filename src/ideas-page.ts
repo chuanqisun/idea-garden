@@ -1,7 +1,7 @@
 import { html, render } from "lit-html";
 import { repeat } from "lit-html/directives/repeat.js";
 import { filter, from, fromEvent, map, switchMap, tap, toArray } from "rxjs";
-import { constraints$, ideas$, type Constraint, type IdeaItem } from "./store";
+import { constraints$, ideas$, type Constraint, type ConstraintOption, type IdeaItem } from "./store";
 import "./style.css";
 import { generateIdeas } from "./tasks/generate-ideas";
 import { suggestConstraints } from "./tasks/suggest-constraints";
@@ -72,9 +72,19 @@ const constraintsView$ = constraints$.pipe(
             />
             ${constraint.name}</label
           >
-          <select name="${constraint.name}">
-            ${constraint.options.map((option) => html`<option value="${option}">${option}</option>`)}
-          </select>
+          <div class="constraint-options">
+            ${repeat(
+              constraint.options,
+              (option) => option.value,
+              (option) => html`<button
+                type="button"
+                aria-pressed=${option.selected ? "true" : "false"}
+                @click=${() => handleConstraintOptionToggle(constraint, option)}
+              >
+                ${option.value}
+              </button>`
+            )}
+          </div>
         </div> `
       )}`
   )
@@ -106,6 +116,21 @@ function handleCheck(idea: IdeaItem, event: Event) {
 function handleConstraintCheck(constraint: Constraint, event: Event) {
   const checked = (event.target as HTMLInputElement).checked;
   constraints$.next(constraints$.value.map((c) => (c.id === constraint.id ? { ...c, favorited: checked } : c)));
+}
+
+function handleConstraintOptionToggle(constraint: Constraint, option: ConstraintOption) {
+  constraints$.next(
+    constraints$.value.map((currentConstraint) =>
+      currentConstraint.id === constraint.id
+        ? {
+            ...currentConstraint,
+            options: currentConstraint.options.map((currentOption) =>
+              currentOption.value === option.value ? { ...currentOption, selected: !currentOption.selected } : currentOption
+            ),
+          }
+        : currentConstraint
+    )
+  );
 }
 
 render(html` ${observe(ideaListView$)} `, ideaList);
