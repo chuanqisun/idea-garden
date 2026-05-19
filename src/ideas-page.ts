@@ -115,7 +115,20 @@ function handleCheck(idea: IdeaItem, event: Event) {
 
 function handleConstraintCheck(constraint: Constraint, event: Event) {
   const checked = (event.target as HTMLInputElement).checked;
-  constraints$.next(constraints$.value.map((c) => (c.id === constraint.id ? { ...c, favorited: checked } : c)));
+  constraints$.next(
+    constraints$.value.map((currentConstraint) =>
+      currentConstraint.id === constraint.id
+        ? {
+            ...currentConstraint,
+            favorited: checked,
+            options: currentConstraint.options.map((option) => ({
+              ...option,
+              selected: checked ? option.selected : false,
+            })),
+          }
+        : currentConstraint
+    )
+  );
 }
 
 function handleConstraintOptionToggle(constraint: Constraint, option: ConstraintOption) {
