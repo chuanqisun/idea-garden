@@ -1,10 +1,10 @@
 import { html, render } from "lit-html";
 import { repeat } from "lit-html/directives/repeat.js";
-import { BehaviorSubject, filter, from, fromEvent, map, switchMap, tap, toArray } from "rxjs";
+import { filter, from, fromEvent, map, switchMap, tap, toArray } from "rxjs";
+import { constraints$, ideas$, type Constraint, type IdeaItem } from "./store";
 import "./style.css";
 import { generateIdeas } from "./tasks/generate-ideas";
 import { suggestConstraints } from "./tasks/suggest-constraints";
-import type { Constraint, IdeaItem } from "./types";
 import { observe } from "./utils/observe-directive";
 import { toLines } from "./utils/to-lines";
 
@@ -12,9 +12,6 @@ const generateButton = document.querySelector(`[data-action="generate"]`) as HTM
 const ideaList = document.querySelector("#idea-list") as HTMLElement;
 const ideaTitle = document.querySelector("#idea-title") as HTMLElement;
 const parametersForm = document.querySelector("#parameters") as HTMLFormElement;
-
-const ideas$ = new BehaviorSubject<IdeaItem[]>([]);
-const constraints$ = new BehaviorSubject<Constraint[]>([]);
 
 fromEvent(generateButton, "click")
   .pipe(

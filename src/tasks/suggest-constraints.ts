@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { Observable, filter, from, map, switchMap } from "rxjs";
 import { openaiApiKey$ } from "../openai/openai-connection";
-import type { Constraint, IdeaItem } from "../types";
+import type { Constraint, IdeaItem } from "../store";
 import { toLines } from "../utils/to-lines";
 
 export function suggestConstraints(items: IdeaItem[]): Observable<Constraint> {

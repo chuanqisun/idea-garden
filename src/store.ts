@@ -1,3 +1,5 @@
+import { BehaviorSubject } from "rxjs";
+
 export interface IdeaItem {
   id: number;
   title: string;
@@ -12,3 +14,6 @@ export interface Constraint {
   options: string[];
   favorited?: boolean;
 }
+
+export const ideas$ = new BehaviorSubject<IdeaItem[]>([]);
+export const constraints$ = new BehaviorSubject<Constraint[]>([]);
