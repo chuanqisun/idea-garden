@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>idea-garden</title>
   </head>
-  <body>
+  <body class="ideas-layout">
     <header class="app-header">
       <h1 id="idea-title" contenteditable="plaintext-only">Awesome Sunday Morning idea</h1>
       <menu class="header-menu">
@@ -15,21 +15,19 @@
         <a href="./setup.html" class="menu-link">Setup</a>
       </menu>
     </header>
-    <div class="app-body">
-      <aside class="constraints-sidebar">
-        <div class="sidebar-header">
-          <h2>Constraints</h2>
-          <button id="add-constraint" type="button">+ Add</button>
-        </div>
-        <form id="parameters"></form>
-      </aside>
-      <main class="ideas-main">
-        <div class="ideas-toolbar">
-          <button id="add-idea" type="button">+ Add Idea</button>
-        </div>
-        <ul id="idea-list"></ul>
-      </main>
-    </div>
+    <aside class="constraints-sidebar">
+      <div class="sidebar-header">
+        <h2>Constraints</h2>
+        <button id="add-constraint" type="button">+ Add</button>
+      </div>
+      <form id="parameters"></form>
+    </aside>
+    <main class="ideas-main">
+      <div class="ideas-toolbar">
+        <button id="add-idea" type="button">+ Add Idea</button>
+      </div>
+      <ul id="idea-list"></ul>
+    </main>
     <script type="module" src="/src/ideas-page.ts"></script>
   </body>
 </html>
