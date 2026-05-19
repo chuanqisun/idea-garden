@@ -72,7 +72,6 @@ const constraintsView$ = constraints$.pipe(
             />
             ${constraint.name}</label
           >
-          <label>${constraint.name}</label>
           <select name="${constraint.name}">
             ${constraint.options.map((option) => html`<option value="${option}">${option}</option>`)}
           </select>
