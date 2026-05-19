@@ -31,7 +31,7 @@ fromEvent(generateButton, "click")
         filter((item) => item !== null),
         tap((item) => ideas$.next([...ideas$.value, item])),
         toArray(),
-        switchMap((items) => suggestConstraints(items)),
+        switchMap(suggestConstraints(constraints$)),
         tap((constraint) => constraints$.next([...constraints$.value, constraint]))
       )
     )
