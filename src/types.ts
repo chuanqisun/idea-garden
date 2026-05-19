@@ -10,4 +10,5 @@ export interface Constraint {
   name: string;
   value: string;
   options: string[];
+  favorited?: boolean;
 }

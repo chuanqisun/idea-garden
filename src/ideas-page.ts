@@ -1,10 +1,9 @@
 import { html, render } from "lit-html";
 import { repeat } from "lit-html/directives/repeat.js";
-import OpenAI from "openai";
-import type { Stream } from "openai/streaming";
-import { BehaviorSubject, filter, from, fromEvent, map, Observable, switchMap, tap, toArray } from "rxjs";
-import { openaiApiKey$ } from "./openai/openai-connection";
+import { BehaviorSubject, filter, from, fromEvent, map, switchMap, tap, toArray } from "rxjs";
 import "./style.css";
+import { generateIdeas } from "./tasks/generate-ideas";
+import { suggestConstraints } from "./tasks/suggest-constraints";
 import type { Constraint, IdeaItem } from "./types";
 import { observe } from "./utils/observe-directive";
 import { toLines } from "./utils/to-lines";
@@ -20,8 +19,8 @@ const constraints$ = new BehaviorSubject<Constraint[]>([]);
 fromEvent(generateButton, "click")
   .pipe(
     tap(() => {
-      ideas$.next([]);
-      constraints$.next([]);
+      ideas$.next(ideas$.value.filter((idea) => idea.favorited));
+      constraints$.next(constraints$.value.filter((constraint) => constraint.favorited));
     }),
     map(() => ideaTitle.textContent ?? "Random ideas"),
     switchMap(generateIdeas()),
@@ -49,7 +48,12 @@ const ideaListView$ = ideas$.pipe(
         ideas,
         (idea) => idea.id,
         (idea) => html`<li>
-          <h3>${idea.title}</h3>
+          <h3>
+            <label>
+              <input type="checkbox" ?checked=${idea.favorited} @change=${(event: Event) => handleCheck(idea, event)} />
+              ${idea.title}
+            </label>
+          </h3>
           <p>${idea.description}</p>
         </li> `
       )}`
@@ -63,6 +67,14 @@ const constraintsView$ = constraints$.pipe(
         constraints,
         (constraint) => constraint.id,
         (constraint) => html`<div class="constraint">
+          <label
+            ><input
+              type="checkbox"
+              ?checked=${constraint.favorited}
+              @change=${(event: Event) => handleConstraintCheck(constraint, event)}
+            />
+            ${constraint.name}</label
+          >
           <label>${constraint.name}</label>
           <select name="${constraint.name}">
             ${constraint.options.map((option) => html`<option value="${option}">${option}</option>`)}
@@ -90,94 +102,14 @@ function toIdeaItem(): (rawCode: string) => IdeaItem | null {
   };
 }
 
-function generateIdeas(): (title: string) => Promise<Stream<OpenAI.Responses.ResponseStreamEvent>> {
-  return async (title: string) => {
-    const openai = new OpenAI({
-      dangerouslyAllowBrowser: true,
-      apiKey: openaiApiKey$.value,
-    });
-
-    const stream = await openai.responses.create({
-      stream: true,
-      model: "gpt-5.4-mini",
-      input: [
-        {
-          role: "system",
-          content: `
-Generate list of ideas based on the provided title. 
-Respond in JSONL format, exactly one item per line. Each item must be valid JSON object in this type:
-{ "title": string, "description": string }
-            `,
-        },
-        { role: "user", content: title },
-      ],
-      text: { verbosity: "low" },
-      reasoning: { effort: "none" },
-    });
-
-    return stream;
-  };
+function handleCheck(idea: IdeaItem, event: Event) {
+  const checked = (event.target as HTMLInputElement).checked;
+  ideas$.next(ideas$.value.map((i) => (i.id === idea.id ? { ...i, favorited: checked } : i)));
 }
 
-function suggestConstraints(items: IdeaItem[]): Observable<Constraint> {
-  const openai = new OpenAI({
-    dangerouslyAllowBrowser: true,
-    apiKey: openaiApiKey$.value,
-  });
-
-  let id = 0;
-
-  return from(
-    openai.responses.create({
-      stream: true,
-      model: "gpt-5.4-mini",
-      input: [
-        {
-          role: "system",
-          content: `
-Suggest constraints that help a user narrow down a list of ideas.
-Each constraint should represent a dimension or facet such as audience, scope, format, cost, or timeframe.
-Respond in JSONL format, exactly one item per line. Each item must be a valid JSON object in this shape:
-{ "name": string, "options": string[] }
-Rules:
-- Keep "name" short and clear.
-- Provide sensible options for each constraint.
-- Base the constraints on the ideas provided by the user.
-          `,
-        },
-        {
-          role: "user",
-          content: JSON.stringify(items.map(({ title, description }) => ({ title, description }))),
-        },
-      ],
-      text: { verbosity: "low" },
-      reasoning: { effort: "none" },
-    })
-  ).pipe(
-    switchMap((stream) =>
-      from(stream).pipe(
-        filter((chunk) => chunk.type === "response.output_text.delta"),
-        map((chunk) => chunk.delta),
-        toLines(),
-        filter((line) => line.trim().length > 0),
-        map((rawCode) => {
-          try {
-            const parsed = JSON.parse(rawCode);
-            return {
-              id: id++,
-              name: parsed.name,
-              value: parsed.options?.at(0),
-              options: parsed.options,
-            } satisfies Constraint;
-          } catch (error) {
-            console.error("Failed to parse constraint", error);
-            return null;
-          }
-        }),
-        filter((constraint) => constraint !== null)
-      )
-    )
-  );
+function handleConstraintCheck(constraint: Constraint, event: Event) {
+  const checked = (event.target as HTMLInputElement).checked;
+  constraints$.next(constraints$.value.map((c) => (c.id === constraint.id ? { ...c, favorited: checked } : c)));
 }
 
 render(html` ${observe(ideaListView$)} `, ideaList);
