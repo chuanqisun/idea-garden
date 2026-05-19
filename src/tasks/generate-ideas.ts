@@ -1,13 +1,13 @@
 import OpenAI from "openai";
-import type { Stream } from "openai/streaming";
-import type { BehaviorSubject } from "rxjs";
+import { filter, from, map, Observable, tap, type BehaviorSubject } from "rxjs";
 import { openaiApiKey$ } from "../openai/openai-connection";
 import type { Constraint, IdeaItem } from "../store";
+import { toLines } from "../utils/to-lines";
 
 export function generateIdeas(
   ideas$: BehaviorSubject<IdeaItem[]>,
   constraints$: BehaviorSubject<Constraint[]>
-): (title: string) => Promise<Stream<OpenAI.Responses.ResponseStreamEvent>> {
+): (title: string) => Promise<Observable<IdeaItem>> {
   return async (title: string) => {
     const openai = new OpenAI({
       dangerouslyAllowBrowser: true,
@@ -62,6 +62,34 @@ Respond in JSONL format, exactly one item per line. Each item must be valid JSON
       reasoning: { effort: "none" },
     });
 
-    return stream;
+    const item$ = from(stream).pipe(
+      filter((chunk) => chunk.type === "response.output_text.delta"),
+      map((chunk) => chunk.delta),
+      toLines(),
+      filter((line) => line.trim().length > 0),
+      map(toIdeaItem()),
+      filter((item) => item !== null),
+      tap((item) => ideas$.next([...ideas$.value, item!]))
+    );
+
+    return item$;
+  };
+}
+
+function toIdeaItem(): (rawCode: string) => IdeaItem | null {
+  let id = 0;
+
+  return (rawCode: string) => {
+    try {
+      const parsed = JSON.parse(rawCode);
+      return {
+        id: id++,
+        title: parsed.title,
+        description: parsed.description,
+      };
+    } catch (e) {
+      console.error("Failed to parse idea item", e);
+      return null;
+    }
   };
 }
