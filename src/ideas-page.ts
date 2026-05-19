@@ -20,7 +20,7 @@ fromEvent(generateButton, "click")
       constraints$.next(constraints$.value.filter((constraint) => constraint.favorited));
     }),
     map(() => ideaTitle.textContent ?? "Random ideas"),
-    switchMap(generateIdeas()),
+    switchMap(generateIdeas(ideas$, constraints$)),
     switchMap((stream) =>
       from(stream).pipe(
         filter((chunk) => chunk.type === "response.output_text.delta"),

@@ -20,7 +20,7 @@ export function suggestConstraints(items: IdeaItem[]): Observable<Constraint> {
         {
           role: "system",
           content: `
-Suggest constraints that help a user narrow down a list of ideas.
+Suggest 3-5 constraints that help a user narrow down a list of ideas.
 Each constraint should represent a dimension or facet such as audience, scope, format, cost, or timeframe.
 Respond in JSONL format, exactly one item per line. Each item must be a valid JSON object in this shape:
 { "name": string, "options": string[] }
