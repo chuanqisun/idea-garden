@@ -125,7 +125,9 @@ function handleConstraintOptionToggle(constraint: Constraint, option: Constraint
         ? {
             ...currentConstraint,
             options: currentConstraint.options.map((currentOption) =>
-              currentOption.value === option.value ? { ...currentOption, selected: !currentOption.selected } : currentOption
+              currentOption.value === option.value
+                ? { ...currentOption, selected: !currentOption.selected }
+                : currentOption
             ),
           }
         : currentConstraint
