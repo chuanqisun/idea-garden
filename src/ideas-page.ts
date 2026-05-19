@@ -40,9 +40,13 @@ fromEvent(cleanButton, "click").pipe(tap(cleanupChecks)).subscribe();
 
 // ── Constraint operations ───────────────────────────────────────────────────
 
+let _nextId = Date.now();
+function nextId() {
+  return ++_nextId;
+}
+
 function addConstraint() {
-  const id = Date.now();
-  constraints$.next([...constraints$.value, { id, name: "New Constraint", options: [], favorited: false }]);
+  constraints$.next([...constraints$.value, { id: nextId(), name: "New Constraint", options: [], favorited: false }]);
 }
 
 function updateConstraintName(constraint: Constraint, name: string) {
@@ -77,8 +81,7 @@ function deleteConstraintOption(constraint: Constraint, option: ConstraintOption
 // ── Idea operations ─────────────────────────────────────────────────────────
 
 function addIdeaItem() {
-  const id = Date.now();
-  ideas$.next([...ideas$.value, { id, title: "New idea", description: "", favorited: false }]);
+  ideas$.next([...ideas$.value, { id: nextId(), title: "New idea", description: "", favorited: false }]);
 }
 
 function updateIdeaTitle(idea: IdeaItem, title: string) {
