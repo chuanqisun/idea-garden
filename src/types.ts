@@ -2,6 +2,7 @@ export interface IdeaItem {
   id: number;
   title: string;
   description: string;
+  favorited?: boolean;
 }
 
 export interface Constraint {
